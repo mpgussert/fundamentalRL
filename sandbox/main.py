@@ -12,32 +12,11 @@ from storage import Memory
 from algorithms import A2C_step, A2C_step_separated
 
 
-def fill_replay(env, agent, replay):
-    obs = torch.from_numpy(np.array(env.env.state)).float()
-    for i in range(replay._capacity):
-        s0 = obs
-        action_logits, value = agent(obs)
-        action = Categorical(logits = action_logits).sample()
-        obs, rews, dones, infos = env.step(action.numpy())
-        obs = torch.from_numpy(obs).float()
-        if(dones):
-            rews = -1
-
-        replay.remember(s0, 
-                       action_logits, 
-                       action,  
-                       rews,
-                       value, 
-                       dones)
-
-        if dones:
-            obs = torch.from_numpy(env.reset()).float()
-        env.render()
-    _, final_value = agent(obs)
-    replay.prep(final_value)
-
 def fill_replay_separated(env, actor, critic, replay):
-    obs = torch.from_numpy(np.array(env.env.state)).float()
+    obs = torch.from_numpy(env.reset()).float()
+    total_reward = 0
+    current_reward = 0
+    num_episodes = 0
     for i in range(replay._capacity):
         s0 = obs
         action_logits = actor(obs)
@@ -45,9 +24,8 @@ def fill_replay_separated(env, actor, critic, replay):
         action = Categorical(logits = action_logits).sample()
         obs, rews, dones, infos = env.step(action.numpy())
         obs = torch.from_numpy(obs).float()
-        if(dones):
-            rews = -1
-
+        total_reward += rews
+        current_reward += rews
         replay.remember(s0, 
                        action_logits, 
                        action,  
@@ -57,17 +35,19 @@ def fill_replay_separated(env, actor, critic, replay):
 
         if dones:
             obs = torch.from_numpy(env.reset()).float()
+            num_episodes += 1
+            print(current_reward)
+            current_reward=0
         env.render()
-    if not dones:
-     final_value = critic(obs)
-    else:
-        final_value = -1
-    replay.prep(final_value)        
+
+    final_value = critic(obs)
+    replay.prep(final_value)  
+    return total_reward/num_episodes      
 
 
 if __name__=="__main__":
     env = gym.make('CartPole-v0')
-    #figure out how to extract this from spaces.  need to test for type...
+
     numObs = 4
     numActions = 2
     mem_length = 500
@@ -79,11 +59,11 @@ if __name__=="__main__":
     actor = Actor(numObs, numActions)
     critic = Critic(numObs)
 
-    actor_optim = optim.Adam(actor.parameters(), 1E-2)
-    critic_optim = optim.Adam(critic.parameters(), 1E-2)
+    actor_optim = optim.Adam(actor.parameters(), 1E-3)
+    critic_optim = optim.Adam(critic.parameters(), 1E-3)
 
-    while True:
-        fill_replay_separated(env, actor, critic, replay)
+    for i in range(1000):
+        mean_reward = fill_replay_separated(env, actor, critic, replay)
         a, c = A2C_step_separated(actor_optim, actor, critic_optim, critic, replay)
-        print(a, c)
+        print(i, mean_reward, a, c)
     
