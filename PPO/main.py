@@ -124,7 +124,7 @@ if __name__=="__main__":
     this environment
     """
     agent = Agent(numObs, numActions, hiddenSize)
-    optimizer = optim.Adam(agent.parameters(), 1E-3)
+    optimizer = optim.Adam(agent.parameters(), 1E-2)
 
     for i in range(1000):
         """
