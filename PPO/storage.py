@@ -9,7 +9,7 @@ from typing import NewType
 
 class Memory:
     """
-    
+    Rollout storage for offline policy training.
     """
     def __init__(self, capacity, numObs, numActions):
         super(Memory, self).__init__()
@@ -23,7 +23,10 @@ class Memory:
         self._values  = torch.zeros((self._capacity, 1)).float()
         self._returns = torch.zeros((self._capacity, 1)).float()
         self._dones = torch.zeros((self._capacity, 1)).int()
-        self._gamma = 0.99
+
+        #discount factor for approximating stochastic returns.
+        #see compute_returns below for details
+        self._gamma = 0.99 
         self._currentIndex = 0
 
 
@@ -49,7 +52,31 @@ class Memory:
         self._currentIndex+=1
 
     def compute_returns(self, final_value):
-        #calculate stochastic returns. advantage here too?
+        """
+        our critic is trying to learn something known as 
+        the State Value Function, V(s).  The value of a 
+        given state s is the expected total reward you would 
+        receive from that state on by following your policy.  
+
+        If we were to calculate this explicitly we would have 
+        an infinate sum, and each term in that sum would have 
+        cofactors that are the joint state transition probabilities 
+        from the current state to the state used in that term.  
+        the farther forward in time you go, the more cofactors 
+        in that joint probability, and becasue each cofactor is 
+        less than one this goes to zero in the infinate horizon
+        case.
+
+        we can't do that, so we approximate the total expected 
+        return by using our discount factor.  a state k steps in 
+        the future will be discounted by a factor of gamma**k
+        and we can explicitly calculate that with a single 
+        trajectory.  note that there are some implicit assumptions
+        in this approximation that I am still trying to understand.
+        Practically, we calculate this by iterating over our 
+        trajectories in reverse, and the return from the previous 
+        step gets multiplied by gamma.
+        """
         self._returns[-1] = final_value
         for t in reversed(range(self._capacity-1)):
             r_0 = self._rewards[t]

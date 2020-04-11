@@ -59,11 +59,19 @@ if __name__=="__main__":
     actor = Actor(numObs, numActions)
     critic = Critic(numObs)
 
-    actor_optim = optim.Adam(actor.parameters(), 1E-3)
-    critic_optim = optim.Adam(critic.parameters(), 1E-3)
+    lr = 1E-4
+    lr_string = np.format_float_scientific(np.float(lr), precision=1)
+
+    actor_optim = optim.Adam(actor.parameters(), lr)
+    critic_optim = optim.Adam(critic.parameters(), lr)
+
+    data = []
 
     for i in range(1000):
         mean_reward = fill_replay_separated(env, actor, critic, replay)
         a, c = A2C_step_separated(actor_optim, actor, critic_optim, critic, replay)
         print(i, mean_reward, a, c)
+        data.append([i,mean_reward, a, c])
+    
+    np.savetxt("out_"+lr_string, np.array(data))
     
