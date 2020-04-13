@@ -5,6 +5,7 @@ import numpy as np
 
 def PPO_step(optimizer, agent, transitions, nSteps=3, epsilon=0.2):
     t = transitions
+
     #the detach call removes a pytorch tensor from the computational 
     #graph, which prevents that tensor from contribution to any gradients 
     #on that graph.  the returns are only bootstrapped with the value function, 
@@ -22,9 +23,13 @@ def PPO_step(optimizer, agent, transitions, nSteps=3, epsilon=0.2):
         #reward then we expected.
         advantages = Rt - currentValues
 
-        ratio = F.softmax(currentLogits,dim=1).gather(1, transitions._actions)/F.softmax(t._logits, dim=1).gather(1, transitions._actions).detach()
+        currentPolicyProb = F.softmax(currentLogits,dim=1).gather(1, transitions._actions)
+        initialPolicyProb = F.softmax(t._logits, dim=1).gather(1, transitions._actions).detach()
+        
+        ratio = currentPolicyProb / initialPolicyProb
+        clampedRatio = torch.clamp(ratio, 1-epsilon, 1+epsilon)
 
-        ActorLoss = -torch.mean(torch.min(ratio*advantages.detach(), torch.clamp(ratio, 1-epsilon, 1+epsilon)*advantages.detach()))
+        ActorLoss = -torch.mean(torch.min(ratio,clampedRatio)*advantages.detach())
         CriticLoss = torch.mean(advantages).pow(2)
 
         ActorLoss.backward(retain_graph=True)

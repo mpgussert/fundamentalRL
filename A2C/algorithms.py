@@ -29,8 +29,8 @@ def A2C_step(optimizer, agent, transitions):
     #on the policy.  log_softmax is just log(softmax(x)), and the gather call
     #is used to intelligently index the log probabilities based on the actions taken
     #(torch does not have intelligent indexing like numpy in certain cases).  Note the negative 
-    #sign on the actor loss.  this is becuase the gradient operation appears explicitly
-    #in the loss funciton, and we need to go DOWNHILL, not up.
+    #sign on the actor loss.  this is becuase we are trying to MAXIMIZE the actor "loss", and
+    # our optimizers are all working to minimize whatever you call backward() on.
     ActorLoss = -torch.mean(Advantages.detach()*F.log_softmax(transitions._logits, dim=1).gather(1, transitions._actions))
     CriticLoss = torch.mean(Advantages.pow(2))
 
