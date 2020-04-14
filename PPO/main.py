@@ -8,7 +8,7 @@ import torch.optim as optim
 
 from model import Agent
 from storage import Memory
-from algorithms import PPO_step
+from algorithms import PPO_step_clipped, PPO_step_adaptive
 
 def fill_replay(env, agent, replay):
     """
@@ -135,7 +135,7 @@ if __name__=="__main__":
         we update the parameters of the agent
         """
         mean_reward = fill_replay(env, agent, replay)
-        actorLoss, criticLoss = PPO_step(optimizer, agent, replay)
+        actorLoss, criticLoss = PPO_step_adaptive(optimizer, agent, replay)
         print("#####################################")
         print("epoch:      ", i)
         print("mean reward:", mean_reward)
