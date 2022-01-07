@@ -98,7 +98,7 @@ if __name__=="__main__":
     numActions = 2
 
     """
-    the replay length in A2C is a hyperparameter.
+    the replay length in PPO is a hyperparameter.
     for simplicitly, I do not preform batching in this
     example but often times you will need to specify 
     a batch and minibatch size as well
@@ -107,7 +107,7 @@ if __name__=="__main__":
     hiddenSize = 32
 
     """
-    A2C is an "offline" algorithm, which means
+    PPO is an "offline" algorithm, which means
     we collect transitions and then we batch train
     our models on that dataset like we would any other
     """
@@ -124,7 +124,7 @@ if __name__=="__main__":
     this environment
     """
     agent = Agent(numObs, numActions, hiddenSize)
-    optimizer = optim.Adam(agent.parameters(), 1E-2)
+    optimizer = optim.SGD(agent.parameters(), 1E-2)
 
     for i in range(1000):
         """
